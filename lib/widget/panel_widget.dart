@@ -1,26 +1,24 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:project/Data/marker_data.dart';
-import 'package:project/page/user/detailbooking.dart';
+import 'package:project/page/Customer/detailbooking.dart';
 import 'package:project/provider/authProvider.dart';
 import 'package:project/service/firestore.dart';
 import 'package:provider/provider.dart';
 
 class PanelWidget extends StatefulWidget {
+  final String documentId;
   final List<MarkerData> markers;
   String? selectedPosition;
   final void Function(String, LatLng) onSelectLocation;
-
-
-  
-
-
 
   PanelWidget({
     super.key,
     required this.markers,
     this.selectedPosition,
     required this.onSelectLocation,
+    required this.documentId
   });
 
   @override
@@ -38,7 +36,6 @@ class _PanelWidgetState extends State<PanelWidget> {
     }
     return selectedAddress; // ใช้ที่อยู่จากการเลือก radio
   }
-  
 
   @override
   void didUpdateWidget(covariant PanelWidget oldWidget) {
@@ -69,80 +66,73 @@ class _PanelWidgetState extends State<PanelWidget> {
               ),
               const SizedBox(height: 10),
               Expanded(
-                child: StreamBuilder(
-                  stream: firestoreService.getHistoryandBookmarkCustomerStream(
-                    Provider.of<UserProvider>(context, listen: false).userId,
+                child: StreamBuilder<QuerySnapshot>(
+                  stream: firestoreService.getAddressesStream(
+                    Provider.of<idAllAccountProvider>(context, listen: false).uid,
                   ),
                   builder: (context, snapshot) {
                     if (snapshot.connectionState == ConnectionState.waiting) {
                       return Center(child: CircularProgressIndicator());
                     }
                     if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                      return Center(child: Text("ไม่มีข้อมูลสถานที่ที่บันทึกไว้"));
+                      return Center(
+                        child: Text("ไม่มีข้อมูลสถานที่ที่บันทึกไว้"),
+                      );
                     }
 
-                    var docs = snapshot.data!.docs;
+                    var addresses = snapshot.data!.docs;
                     return ListView.builder(
+
                       padding: EdgeInsets.only(bottom: 4),
-                      itemCount: docs.length,
+                      itemCount: addresses.length,
                       itemBuilder: (context, index) {
-                        var data = docs[index].data() as Map<String, dynamic>;
-                        List bookMarks = (data['addresses'] as List?) ?? [];
-
-                        return Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            SizedBox(height: 5),
-                            ListView.builder(
-                              padding: EdgeInsets.zero,
-                              shrinkWrap: true,
-                              physics: NeverScrollableScrollPhysics(),
-                              itemCount: bookMarks.length,
-                              itemBuilder: (context, i) {
-                                var bookMarkItem = bookMarks[i] as Map<String, dynamic>;
-                                String namePosition = bookMarkItem['name'] ?? "ไม่มีชื่อสถานที่";
-                                String nameAddress = bookMarkItem['address'] ?? "ไม่มีที่อยู่";
-                                double lat = bookMarkItem['lat'] ?? 0.0;
-                                double lng = bookMarkItem['lng'] ?? 0.0;
-                                LatLng position = LatLng(lat, lng);
-                                int radioValue = index * 100 + i;
-
-                                return Card(
-                                  color: Colors.white,
-                                  child: ListTile(
-                                    leading: Radio<int>(
-                                      value: radioValue,
-                                      groupValue: selectedIndex,
-                                      activeColor: Colors.green[700],
-                                    onChanged: (int? value) {
-  setState(() {
-    selectedIndex = value;
-    selectedAddress = nameAddress;
-  });
-
-  Future.delayed(Duration.zero, () {
-    widget.onSelectLocation(nameAddress, position);
-  });
-},
+                        var data =
+                            addresses[index].data() as Map<String, dynamic>;
 
 
-                                    ),
-                                    title: Text(
-                                      namePosition,
-                                      style: const TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                    subtitle: Text(
-                                      'ที่อยู่: $nameAddress',
-                                      style: const TextStyle(fontSize: 14),
-                                    ),
-                                  ),
-                                );
+                        String namePosition =
+                            data['name'] ?? "ไม่มีชื่อสถานที่";
+                        String nameAddress = data['address'] ?? "ไม่มีที่อยู่";
+                        GeoPoint position = data['position'];
+                        double lat = position.latitude; // Access latitude
+                        double lng = position.longitude; // Access longitude
+                        LatLng positionLatLng = LatLng(lat, lng);
+                        int radioValue = index;
+
+                        return Card(
+                          color: Colors.white,
+                          child: ListTile(
+                            leading: Radio<int>(
+                              value: radioValue,
+                              groupValue: selectedIndex,
+                              activeColor: Colors.green[700],
+                              onChanged: (int? value) {
+                                setState(() {
+                                  selectedIndex = value;
+                                  selectedAddress = nameAddress;
+                                });
+
+                                Future.delayed(Duration.zero, () {
+                                  widget.onSelectLocation(
+                                    nameAddress,
+                                    positionLatLng,
+                                  );
+                                });
                               },
                             ),
-                          ],
+                            title: Text(
+                              namePosition,
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            subtitle: Text(
+                              'ที่อยู่: $nameAddress',
+                              maxLines: 2,
+                              style: const TextStyle(fontSize: 14),
+                            ),
+                          ),
                         );
                       },
                     );
@@ -163,7 +153,7 @@ class _PanelWidgetState extends State<PanelWidget> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => DetailBookingPage(address: address),
+                    builder: (context) => DetailBookingPage(address: address,documentId: widget.documentId,),
                   ),
                 );
               } else {
@@ -190,13 +180,13 @@ class _PanelWidgetState extends State<PanelWidget> {
   }
 
   Widget buildDragHandle() => Center(
-        child: Container(
-          width: 36,
-          height: 7,
-          decoration: BoxDecoration(
-            color: Colors.grey[300],
-            borderRadius: BorderRadius.circular(12),
-          ),
-        ),
-      );
+    child: Container(
+      width: 36,
+      height: 7,
+      decoration: BoxDecoration(
+        color: Colors.grey[300],
+        borderRadius: BorderRadius.circular(12),
+      ),
+    ),
+  );
 }

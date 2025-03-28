@@ -1,7 +1,7 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:project/firebase_options.dart';
-import 'package:project/page/user/login.dart';
+import 'package:project/page/Customer/login.dart';
 import 'package:project/provider/authProvider.dart';
 import 'package:provider/provider.dart';
 
@@ -11,8 +11,8 @@ void main() async {
 
   runApp(MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (context) => UserProvider()),
-        ChangeNotifierProvider(create: (context) => empolyeeProvider()),
+        ChangeNotifierProvider(create: (context) => idAllAccountProvider()),
+        ChangeNotifierProvider(create: (context) => employeeProvider()),
       ],
       child: MyApp(),));
 }

@@ -1,18 +1,20 @@
 import 'package:flutter/material.dart';
 
-class UserProvider with ChangeNotifier {
-  String _userId = "";
+class idAllAccountProvider with ChangeNotifier {
+  String _uid = "";  // เปลี่ยนชื่อจาก _userId เป็น _docId
 
-  String get userId => _userId;
+  String get uid => _uid;
 
-  void setUserId(String userId) {
-    _userId = userId;
-    print('Setting userId to: $_userId');
-    notifyListeners();
+  void setUid(String uid) {
+    _uid = uid;  // เก็บค่า docId
+    print('Setting docId to: $_uid');
+    notifyListeners();  // แจ้งเตือนผู้ฟังเมื่อมีการเปลี่ยนแปลง
   }
 }
 
-class empolyeeProvider with ChangeNotifier {
+
+
+class employeeProvider with ChangeNotifier {
   String _empolyeeName = '';
 
   String get empolyeeName => _empolyeeName;

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:project/page/user/servicetype.dart';
+import 'package:project/page/Customer/servicetype.dart';
 
 Widget serviceButton(BuildContext context,String label, String assetPath) {
     return Column(
